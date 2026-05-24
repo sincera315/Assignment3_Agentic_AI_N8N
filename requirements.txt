@@ -1,0 +1,42 @@
+# Core Dependencies
+fastapi
+uvicorn[standard]
+pydantic
+python-dotenv
+
+# CrewAI and Agent Framework
+crewai
+crewai-tools
+langchain
+langchain-community
+
+# Groq LLM Integration
+groq
+
+# Streamlit for UI
+streamlit
+
+# HTTP Client
+httpx
+requests
+
+# Data Processing
+numpy
+pandas
+
+# File Handling
+aiofiles
+
+# Logging
+loguru
+
+# Date/Time
+python-dateutil
+
+# JSON Schema Validation
+jsonschema
+
+# Testing (Optional)
+pytest
+pytest-asyncio
+

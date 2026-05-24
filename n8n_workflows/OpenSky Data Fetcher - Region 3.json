@@ -1,0 +1,490 @@
+{
+  "name": "OpenSky Data Fetcher - Region 3",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "765b48dc-3fb2-44cc-ab57-27b12d5672ee",
+      "name": "Every 15 Seconds",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1808,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://opensky-network.org/api/states/all",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "lamin",
+              "value": "35.0"
+            },
+            {
+              "name": "lomin",
+              "value": "25.0"
+            },
+            {
+              "name": "lamax",
+              "value": "42.0"
+            },
+            {
+              "name": "lomax",
+              "value": "45.0"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {
+              "maxRedirects": 3
+            }
+          },
+          "response": {
+            "response": {}
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "9b8d965e-8952-41ba-9cf0-f5a2eb288a18",
+      "name": "Fetch OpenSky Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -1648,
+        128
+      ],
+      "retryOnFail": true,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "{{ $json.states }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "25d04125-1f9b-4eaf-a999-39f53c065517",
+      "name": "Check API Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1472,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\n// Handle both array-wrapped and direct responses\nlet responseData;\nif (Array.isArray(items[0].json)) {\n  // Data is wrapped in array: [{ time: ..., states: [...] }]\n  responseData = items[0].json[0];\n} else {\n  // Data is direct object: { time: ..., states: [...] }\n  responseData = items[0].json;\n}\n\n// Validate we have states\nif (!responseData || !responseData.states || responseData.states.length === 0) {\n  return [{\n    json: {\n      error: 'No flight data received',\n      timestamp: Math.floor(Date.now() / 1000),\n      datetime: new Date().toISOString(),\n      region: 'region3',\n      region_name: 'Middle East Hub',\n      flight_count: 0,\n      flights: [],\n      anomalies: [],\n      anomaly_count: 0,\n      bounding_box: {\n        lat_min: 45.0,\n        lat_max: 55.0,\n        lon_min: 5.0,\n        lon_max: 15.0\n      }\n    }\n  }];\n}\n\nconst states = responseData.states;\n\n// Transform each flight state into structured format\nconst flights = states.map(state => ({\n  icao24: state[0],\n  callsign: state[1] ? state[1].trim() : null,\n  origin_country: state[2],\n  time_position: state[3],\n  last_contact: state[4],\n  longitude: state[5],\n  latitude: state[6],\n  baro_altitude: state[7],\n  on_ground: state[8],\n  velocity: state[9],\n  true_track: state[10],\n  vertical_rate: state[11],\n  sensors: state[12],\n  geo_altitude: state[13],\n  squawk: state[14],\n  spi: state[15],\n  position_source: state[16]\n}));\n\n// Create snapshot with metadata\nconst snapshot = {\n  timestamp: Math.floor(Date.now() / 1000),\n  datetime: new Date().toISOString(),\n  region: 'region3',\n  region_name: 'Middle East Hub',\n  flight_count: flights.length,\n  flights: flights,\n  bounding_box: {\n    lat_min: 45.0,\n    lat_max: 55.0,\n    lon_min: 5.0,\n    lon_max: 15.0\n  },\n  metadata: {\n    api_status: 'success',\n    api_timestamp: responseData.time,\n    fetch_time: new Date().toISOString()\n  }\n};\n\nreturn [{ json: snapshot }];"
+      },
+      "id": "a6e6de87-872c-4715-9052-96f153ad941b",
+      "name": "Transform Flight Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1296,
+        32
+      ],
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the current snapshot from input\nconst items = $input.all();\nconst currentSnapshot = items[0].json;\n\n// Initialize anomalies array\nconst anomalies = [];\n\n// Define anomaly detection rules\nconst anomalyRules = [\n  {\n    name: \"low_speed_at_altitude\",\n    check: (flight) => {\n      return flight.velocity < 50 && flight.baro_altitude > 8000 && !flight.on_ground;\n    },\n    severity: \"high\",\n    message: (flight) => `Low speed at altitude for ${flight.callsign || 'Unknown'}: ${flight.velocity} m/s at ${flight.baro_altitude}m`\n  },\n  {\n    name: \"rapid_descent\",\n    check: (flight) => {\n      return flight.vertical_rate < -15 && flight.baro_altitude > 1000;\n    },\n    severity: \"high\",\n    message: (flight) => `Rapid descent detected for ${flight.callsign || 'Unknown'}: ${flight.vertical_rate} m/s from ${flight.baro_altitude}m`\n  },\n  {\n    name: \"stationary_aircraft\",\n    check: (flight) => {\n      return flight.velocity < 10 && flight.baro_altitude > 100 && !flight.on_ground;\n    },\n    severity: \"low\",\n    message: (flight) => `Stationary aircraft detected: ${flight.callsign || 'Unknown'} at ${flight.baro_altitude}m`\n  }\n];\n\n// Detect anomalies in current flights\nif (currentSnapshot.flights && Array.isArray(currentSnapshot.flights)) {\n  currentSnapshot.flights.forEach(flight => {\n    anomalyRules.forEach(rule => {\n      if (rule.check(flight)) {\n        anomalies.push({\n          type: rule.name,\n          severity: rule.severity,\n          callsign: flight.callsign || \"Unknown\",\n          icao24: flight.icao24,\n          latitude: flight.latitude,\n          longitude: flight.longitude,\n          altitude: flight.baro_altitude,\n          velocity: flight.velocity,\n          vertical_rate: flight.vertical_rate,\n          message: rule.message(flight),\n          detected_at: new Date().toISOString(),\n          timestamp: currentSnapshot.timestamp,\n          region: currentSnapshot.region || 'region1'\n        });\n      }\n    });\n  });\n}\n\n// Add anomalies to snapshot\ncurrentSnapshot.anomalies = anomalies;\ncurrentSnapshot.anomaly_count = anomalies.length;\n\nreturn [{ json: currentSnapshot }];"
+      },
+      "id": "bade1011-fb21-43b8-bf1b-b4629551be7d",
+      "name": "Detect Anomalies",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1120,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json.anomaly_count}}",
+              "operation": "larger"
+            }
+          ]
+        }
+      },
+      "id": "24a5c07d-dabf-4e5c-adcb-c8f2512dd9ae",
+      "name": "Has Anomalies?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -624,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst snapshot = items[0].json;\n\n// Prepare alerts data\nconst alertsData = {\n  last_updated: new Date().toISOString(),\n  alerts: snapshot.anomalies || [],\n  alert_count: snapshot.anomaly_count || 0,\n  region: snapshot.region,\n  snapshot_timestamp: snapshot.timestamp\n};\n\n// Return both snapshot (for next node) and alerts data (for file write)\nreturn [\n  { json: snapshot },           // Main path continues with snapshot\n  { json: alertsData }          // Branch path for alerts file\n];"
+      },
+      "id": "a1859e45-190b-414b-bda1-d86444e5780f",
+      "name": "Save Alerts to File",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -432,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\n// Check if file read succeeded\nif (items[0].json && items[0].json.data) {\n  try {\n    const snapshot = JSON.parse(items[0].json.data);\n    \n    // Mark as cached\n    snapshot.metadata = snapshot.metadata || {};\n    snapshot.metadata.from_cache = true;\n    snapshot.metadata.cache_reason = 'API request failed or returned empty data';\n    snapshot.metadata.attempted_at = new Date().toISOString();\n    \n    return [{ json: snapshot }];\n  } catch (err) {\n    console.log('Could not parse cached data:', err.message);\n  }\n}\n\n// Return empty snapshot if no cache available\nreturn [{\n  json: {\n    error: 'API failed and no cached data available',\n    timestamp: Math.floor(Date.now() / 1000),\n    datetime: new Date().toISOString(),\n    region: 'region1',\n    region_name: 'Central Europe (Frankfurt, Munich, Vienna, Zurich)',\n    flight_count: 0,\n    flights: [],\n    anomalies: [],\n    anomaly_count: 0,\n    bounding_box: {\n      lat_min: 45.0,\n      lat_max: 55.0,\n      lon_min: 5.0,\n      lon_max: 15.0\n    },\n    metadata: {\n      api_status: 'failed',\n      from_cache: false\n    }\n  }\n}];"
+      },
+      "id": "dfa8d598-4337-4ea7-8cbd-3f4283b10874",
+      "name": "Load Cached Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -992,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst snapshot = items[0].json;\n\nconst status = snapshot.metadata?.from_cache ? 'CACHED' : 'SUCCESS';\nconst flightCount = snapshot.flight_count || 0;\nconst anomalyCount = snapshot.anomaly_count || 0;\n\nconst logEntry = `[${new Date().toISOString()}] ${status} | Region: ${snapshot.region} | Flights: ${flightCount} | Anomalies: ${anomalyCount}`;\n\n// Convert log entry to binary for file append\nconst binaryData = Buffer.from(logEntry + '\\n', 'utf-8');\n\nreturn [{\n  json: {\n    ...snapshot,\n    log_entry: logEntry\n  },\n  binary: {\n    data: {\n      data: binaryData,\n      mimeType: 'text/plain',\n      fileName: 'fetch_history.log'\n    }\n  }\n}];"
+      },
+      "id": "ed937c0b-5391-4b06-9c1d-fff1c1afec80",
+      "name": "Format Log Entry",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/data/flight_snapshots/region3_latest.json",
+        "options": {
+          "append": false
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -784,
+        32
+      ],
+      "id": "84fb6c92-f0b4-4a85-93b3-e0fb7d79bc78",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst snapshot = items[0].json;\n\n// Convert JSON to binary data\nconst jsonString = JSON.stringify(snapshot, null, 2);\nconst binaryData = Buffer.from(jsonString, 'utf-8');\n\nreturn [{\n  json: snapshot,\n  binary: {\n    data: {\n      data: binaryData,\n      mimeType: 'application/json',\n      fileName: 'region1_latest.json'\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        32
+      ],
+      "id": "c6492ac9-709b-4452-8ae6-d9d2515dd4f9",
+      "name": "Convert JSON to Binary "
+    },
+    {
+      "parameters": {
+        "fileSelector": "/data/flight_snapshots/region3_latest.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -1184,
+        224
+      ],
+      "id": "a2dc2e64-0dd1-4102-8ea0-1b291e37e468",
+      "name": "Read/Write Files from Disk1",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "/data/logs/fetch_history.log",
+        "options": {
+          "append": true
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        224
+      ],
+      "id": "1a13a1ff-30f2-4e08-8b81-1f15e7f77b58",
+      "name": "Read/Write Files from Disk2"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/data/flight_snapshots/region3_latest.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        -144
+      ],
+      "id": "8d86e1a1-1d47-4b23-8ba8-2fbc3d3d77f1",
+      "name": "Read/Write Files from Disk3",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst snapshot = items[0].json;\n\n// Convert JSON to binary data\nconst jsonString = JSON.stringify(snapshot, null, 2);\nconst binaryData = Buffer.from(jsonString, 'utf-8');\n\nreturn [{\n  json: snapshot,\n  binary: {\n    data: {\n      data: binaryData,\n      mimeType: 'application/json',\n      fileName: 'region1_latest.json'\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -256,
+        -112
+      ],
+      "id": "7d1fc15b-dda8-4aca-97f8-1783192c3dad",
+      "name": "Convert JSON to Binary 1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst snapshot = items[0].json;\n\nconst status = snapshot.metadata?.from_cache ? 'CACHED' : 'SUCCESS';\nconst flightCount = snapshot.flight_count || 0;\nconst anomalyCount = snapshot.anomaly_count || 0;\n\nconst logEntry = `[${new Date().toISOString()}] ${status} | Region: ${snapshot.region} | Flights: ${flightCount} | Anomalies: ${anomalyCount}`;\n\n// Convert log entry to binary for file append\nconst binaryData = Buffer.from(logEntry + '\\n', 'utf-8');\n\nreturn [{\n  json: {\n    ...snapshot,\n    log_entry: logEntry\n  },\n  binary: {\n    data: {\n      data: binaryData,\n      mimeType: 'text/plain',\n      fileName: 'fetch_history.log'\n    }\n  }\n}];"
+      },
+      "id": "b7a4bb5d-544c-4ac3-8e92-d7bcd2c8a65b",
+      "name": "Format Log Entry1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        -176
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "/data/logs/fetch_history.log",
+        "options": {
+          "append": true
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        224,
+        -176
+      ],
+      "id": "06dbc985-7693-4d65-b60c-76c2fa3a6ece",
+      "name": "Read/Write Files from Disk4"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every 15 Seconds": {
+      "main": [
+        [
+          {
+            "node": "Fetch OpenSky Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch OpenSky Data": {
+      "main": [
+        [
+          {
+            "node": "Check API Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check API Success": {
+      "main": [
+        [
+          {
+            "node": "Transform Flight Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read/Write Files from Disk1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform Flight Data": {
+      "main": [
+        [
+          {
+            "node": "Detect Anomalies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Anomalies?": {
+      "main": [
+        [
+          {
+            "node": "Save Alerts to File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Log Entry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Cached Data": {
+      "main": [
+        [
+          {
+            "node": "Format Log Entry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect Anomalies": {
+      "main": [
+        [
+          {
+            "node": "Convert JSON to Binary ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Has Anomalies?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert JSON to Binary ": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk1": {
+      "main": [
+        [
+          {
+            "node": "Load Cached Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Log Entry": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Alerts to File": {
+      "main": [
+        [
+          {
+            "node": "Convert JSON to Binary 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert JSON to Binary 1": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk3": {
+      "main": [
+        [
+          {
+            "node": "Format Log Entry1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Log Entry1": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b04d59a9-4b38-4821-b17a-5ea853acedaa",
+  "meta": {
+    "instanceId": "e7b2e6d40579402ce46b57715f045a7a503937c4aca53329d6a9bb83192c8386"
+  },
+  "id": "qpo96bkoTFix9nGO",
+  "tags": []
+}

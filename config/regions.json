@@ -1,0 +1,44 @@
+{
+  "regions": [
+    {
+      "id": "region1",
+      "name": "Central Europe",
+      "description": "Covers major European airports including Frankfurt, Munich, Vienna, Zurich",
+      "bounding_box": {
+        "lamin": 45.0,
+        "lomin": 5.0,
+        "lamax": 55.0,
+        "lomax": 15.0
+      },
+      "timezone": "Europe/Berlin",
+      "major_airports": ["EDDF", "EDDM", "LOWW", "LSZH"]
+    },
+    {
+      "id": "region2",
+      "name": "North Atlantic",
+      "description": "Covers UK, Ireland, and western Atlantic approaches",
+      "bounding_box": {
+        "lamin": 48.0,
+        "lomin": -10.0,
+        "lamax": 60.0,
+        "lomax": 2.0
+      },
+      "timezone": "Europe/London",
+      "major_airports": ["EGLL", "EGKK", "EIDW", "EGCC"]
+    },
+    {
+      "id": "region3",
+      "name": "Middle East Hub",
+      "description": "Covers Turkey, Eastern Mediterranean, and major ME hubs",
+      "bounding_box": {
+        "lamin": 35.0,
+        "lomin": 25.0,
+        "lamax": 42.0,
+        "lomax": 45.0
+      },
+      "timezone": "Europe/Istanbul",
+      "major_airports": ["LTFM", "LTBA", "LCLK", "LLBG"]
+    }
+  ],
+  "default_region": "region1"
+}

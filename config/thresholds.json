@@ -1,0 +1,56 @@
+{
+  "anomaly_rules": {
+    "low_speed_at_altitude": {
+      "enabled": true,
+      "description": "Detects aircraft moving too slowly at high altitude (possible stall risk)",
+      "velocity_threshold_ms": 50,
+      "altitude_threshold_m": 8000,
+      "severity": "high"
+    },
+    "stationary_aircraft": {
+      "enabled": true,
+      "description": "Detects aircraft that have been nearly stationary for extended periods",
+      "velocity_threshold_ms": 10,
+      "time_limit_seconds": 120,
+      "severity": "medium"
+    },
+    "rapid_altitude_change": {
+      "enabled": true,
+      "description": "Detects sudden altitude changes between snapshots",
+      "altitude_change_threshold_m": 500,
+      "time_window_seconds": 15,
+      "severity": "high"
+    },
+    "rapid_descent": {
+      "enabled": true,
+      "description": "Detects aircraft descending too quickly (possible emergency)",
+      "vertical_rate_threshold_ms": -15,
+      "altitude_minimum_m": 1000,
+      "severity": "critical"
+    },
+    "extreme_velocity": {
+      "enabled": true,
+      "description": "Detects aircraft moving at unrealistic speeds",
+      "max_velocity_ms": 350,
+      "min_velocity_ms": -10,
+      "severity": "medium"
+    },
+    "altitude_bounds": {
+      "enabled": true,
+      "description": "Detects aircraft outside normal altitude ranges",
+      "max_altitude_m": 15000,
+      "min_altitude_m": -100,
+      "severity": "low"
+    }
+  },
+  "alert_expiry": {
+    "critical": 300,
+    "high": 600,
+    "medium": 900,
+    "low": 1200
+  },
+  "snapshot_comparison": {
+    "max_time_diff_seconds": 30,
+    "required_fields": ["icao24", "callsign", "latitude", "longitude", "altitude", "velocity"]
+  }
+}

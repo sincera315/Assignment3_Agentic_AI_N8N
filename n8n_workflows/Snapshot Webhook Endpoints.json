@@ -1,0 +1,430 @@
+{
+  "name": "Snapshot Webhook Endpoints",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "latest-region1",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "b79fc812-1b33-47ad-b8f4-bee08ef0f55c",
+      "name": "Webhook: Region 1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "region1-snapshot"
+    },
+    {
+      "parameters": {
+        "filePath": "/data/flight_snapshots/region1_latest.json"
+      },
+      "id": "06c07494-e7bb-46cc-b7da-677714c992f3",
+      "name": "Read Region 1 Snapshot",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "13a59d14-a0c3-4539-9799-4490fa9d6cf6",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "path": "latest-region2",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "d3421644-d9fe-49ab-a2d4-06b01d29a535",
+      "name": "Webhook: Region 2",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        224
+      ],
+      "webhookId": "region2-snapshot"
+    },
+    {
+      "parameters": {
+        "filePath": "/data/flight_snapshots/region2_latest.json"
+      },
+      "id": "87acd8ee-fa90-41b9-9b8c-93c9b8ae53ae",
+      "name": "Read Region 2 Snapshot",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        224,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "32e64f98-61a9-4f1c-a12e-d82089a86bbf",
+      "name": "Respond Region 2",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        672,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "path": "latest-region3",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "e21c3d80-1ac9-46a5-8309-627968bc1de9",
+      "name": "Webhook: Region 3",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        448
+      ],
+      "webhookId": "region3-snapshot"
+    },
+    {
+      "parameters": {
+        "filePath": "/data/flight_snapshots/region3_latest.json"
+      },
+      "id": "f0392a3b-df52-45a9-a652-12929c67eed2",
+      "name": "Read Region 3 Snapshot",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        224,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "01c12451-bda8-4bef-96b5-c79f034b0309",
+      "name": "Respond Region 3",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        720,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "path": "active-alerts",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "17591356-a525-4d05-9adb-72b5a07d47a3",
+      "name": "Webhook: Active Alerts",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        672
+      ],
+      "webhookId": "active-alerts"
+    },
+    {
+      "parameters": {
+        "filePath": "/data/alerts/active_alerts.json"
+      },
+      "id": "f946246b-ac1e-4767-b337-96349b8182dc",
+      "name": "Read Active Alerts",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        224,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "13c805e3-b4d4-4ada-a3bf-3a618216a6a9",
+      "name": "Respond Alerts",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        672,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map(item => {\n  try {\n    // Get binary data object\n    let binaryData = item.binary?.data;\n    \n    if (!binaryData) {\n      throw new Error('No binary data found');\n    }\n    \n    // binaryData is an object, extract the actual data\n    let jsonString;\n    \n    if (binaryData.data) {\n      // It's nested: { data: Buffer, mimeType: '...', fileName: '...' }\n      if (Buffer.isBuffer(binaryData.data)) {\n        jsonString = binaryData.data.toString('utf8');\n      } else if (typeof binaryData.data === 'string') {\n        jsonString = Buffer.from(binaryData.data, 'base64').toString('utf8');\n      }\n    } else if (typeof binaryData === 'string') {\n      // Direct string (base64)\n      jsonString = Buffer.from(binaryData, 'base64').toString('utf8');\n    } else if (Buffer.isBuffer(binaryData)) {\n      // Direct buffer\n      jsonString = binaryData.toString('utf8');\n    } else {\n      throw new Error(`Cannot extract data from type: ${typeof binaryData}`);\n    }\n    \n    // Parse to JSON\n    const snapshotData = JSON.parse(jsonString);\n    \n    return {\n      json: snapshotData\n    };\n  } catch (error) {\n    return {\n      json: {\n        error: 'Failed to parse file',\n        details: error.message\n      }\n    };\n  }\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        0
+      ],
+      "id": "3ca7a572-e0d2-49b2-800e-30ac9dc59d90",
+      "name": "Parse JSON Region 1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map(item => {\n  try {\n    // Get binary data object\n    let binaryData = item.binary?.data;\n    \n    if (!binaryData) {\n      throw new Error('No binary data found');\n    }\n    \n    // binaryData is an object, extract the actual data\n    let jsonString;\n    \n    if (binaryData.data) {\n      // It's nested: { data: Buffer, mimeType: '...', fileName: '...' }\n      if (Buffer.isBuffer(binaryData.data)) {\n        jsonString = binaryData.data.toString('utf8');\n      } else if (typeof binaryData.data === 'string') {\n        jsonString = Buffer.from(binaryData.data, 'base64').toString('utf8');\n      }\n    } else if (typeof binaryData === 'string') {\n      // Direct string (base64)\n      jsonString = Buffer.from(binaryData, 'base64').toString('utf8');\n    } else if (Buffer.isBuffer(binaryData)) {\n      // Direct buffer\n      jsonString = binaryData.toString('utf8');\n    } else {\n      throw new Error(`Cannot extract data from type: ${typeof binaryData}`);\n    }\n    \n    // Parse to JSON\n    const snapshotData = JSON.parse(jsonString);\n    \n    return {\n      json: snapshotData\n    };\n  } catch (error) {\n    return {\n      json: {\n        error: 'Failed to parse file',\n        details: error.message\n      }\n    };\n  }\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        672
+      ],
+      "id": "f24a94d9-1248-45d5-b3e8-b078116d81de",
+      "name": "Parse JSON ALerts"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map(item => {\n  try {\n    // Get binary data object\n    let binaryData = item.binary?.data;\n    \n    if (!binaryData) {\n      throw new Error('No binary data found');\n    }\n    \n    // binaryData is an object, extract the actual data\n    let jsonString;\n    \n    if (binaryData.data) {\n      // It's nested: { data: Buffer, mimeType: '...', fileName: '...' }\n      if (Buffer.isBuffer(binaryData.data)) {\n        jsonString = binaryData.data.toString('utf8');\n      } else if (typeof binaryData.data === 'string') {\n        jsonString = Buffer.from(binaryData.data, 'base64').toString('utf8');\n      }\n    } else if (typeof binaryData === 'string') {\n      // Direct string (base64)\n      jsonString = Buffer.from(binaryData, 'base64').toString('utf8');\n    } else if (Buffer.isBuffer(binaryData)) {\n      // Direct buffer\n      jsonString = binaryData.toString('utf8');\n    } else {\n      throw new Error(`Cannot extract data from type: ${typeof binaryData}`);\n    }\n    \n    // Parse to JSON\n    const snapshotData = JSON.parse(jsonString);\n    \n    return {\n      json: snapshotData\n    };\n  } catch (error) {\n    return {\n      json: {\n        error: 'Failed to parse file',\n        details: error.message\n      }\n    };\n  }\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        224
+      ],
+      "id": "db9267be-4fb7-4336-974b-de926676e9ca",
+      "name": "Parse JSON Region "
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map(item => {\n  try {\n    // Get binary data object\n    let binaryData = item.binary?.data;\n    \n    if (!binaryData) {\n      throw new Error('No binary data found');\n    }\n    \n    // binaryData is an object, extract the actual data\n    let jsonString;\n    \n    if (binaryData.data) {\n      // It's nested: { data: Buffer, mimeType: '...', fileName: '...' }\n      if (Buffer.isBuffer(binaryData.data)) {\n        jsonString = binaryData.data.toString('utf8');\n      } else if (typeof binaryData.data === 'string') {\n        jsonString = Buffer.from(binaryData.data, 'base64').toString('utf8');\n      }\n    } else if (typeof binaryData === 'string') {\n      // Direct string (base64)\n      jsonString = Buffer.from(binaryData, 'base64').toString('utf8');\n    } else if (Buffer.isBuffer(binaryData)) {\n      // Direct buffer\n      jsonString = binaryData.toString('utf8');\n    } else {\n      throw new Error(`Cannot extract data from type: ${typeof binaryData}`);\n    }\n    \n    // Parse to JSON\n    const snapshotData = JSON.parse(jsonString);\n    \n    return {\n      json: snapshotData\n    };\n  } catch (error) {\n    return {\n      json: {\n        error: 'Failed to parse file',\n        details: error.message\n      }\n    };\n  }\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        448
+      ],
+      "id": "fad4e69b-e133-454a-87b2-d237c2c89f86",
+      "name": "Parse JSON Region 3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook: Region 1": {
+      "main": [
+        [
+          {
+            "node": "Read Region 1 Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Region 1 Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON Region 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: Region 2": {
+      "main": [
+        [
+          {
+            "node": "Read Region 2 Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Region 2 Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON Region ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: Region 3": {
+      "main": [
+        [
+          {
+            "node": "Read Region 3 Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Region 3 Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON Region 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: Active Alerts": {
+      "main": [
+        [
+          {
+            "node": "Read Active Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Active Alerts": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON ALerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON Region 1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON ALerts": {
+      "main": [
+        [
+          {
+            "node": "Respond Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON Region ": {
+      "main": [
+        [
+          {
+            "node": "Respond Region 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON Region 3": {
+      "main": [
+        [
+          {
+            "node": "Respond Region 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f0b1681c-dc67-4db6-a337-bf35f16294a9",
+  "meta": {
+    "instanceId": "e7b2e6d40579402ce46b57715f045a7a503937c4aca53329d6a9bb83192c8386"
+  },
+  "id": "W9UduMluzRpzXt48",
+  "tags": []
+}

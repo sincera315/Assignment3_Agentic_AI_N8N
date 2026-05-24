@@ -1,0 +1,333 @@
+{
+  "name": "OpenSky Data Fetcher - Region 1",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger-node",
+      "name": "Every 15 Seconds",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://opensky-network.org/api/states/all",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "lamin",
+              "value": "45.0"
+            },
+            {
+              "name": "lomin",
+              "value": "5.0"
+            },
+            {
+              "name": "lamax",
+              "value": "55.0"
+            },
+            {
+              "name": "lomax",
+              "value": "15.0"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": true,
+              "maxRedirects": 3
+            }
+          }
+        }
+      },
+      "id": "http-request-opensky",
+      "name": "Fetch OpenSky Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        460,
+        300
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.statusCode}}",
+              "operation": "equals",
+              "value2": "200"
+            }
+          ]
+        }
+      },
+      "id": "check-api-success",
+      "name": "Check API Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract and transform flight data from OpenSky API response\nconst items = $input.all();\nconst outputItems = [];\n\nfor (const item of items) {\n  const responseData = item.json;\n  \n  // Check if we have valid states data\n  if (!responseData || !responseData.states || !Array.isArray(responseData.states)) {\n    console.log('No valid states data received');\n    continue;\n  }\n  \n  const timestamp = responseData.time || Math.floor(Date.now() / 1000);\n  const flights = [];\n  \n  // Transform each flight state into structured format\n  for (const state of responseData.states) {\n    // OpenSky API state array indices:\n    // 0: icao24, 1: callsign, 2: origin_country, 3: time_position\n    // 4: last_contact, 5: longitude, 6: latitude, 7: baro_altitude\n    // 8: on_ground, 9: velocity, 10: true_track, 11: vertical_rate\n    // 12: sensors, 13: geo_altitude, 14: squawk, 15: spi, 16: position_source\n    \n    const flight = {\n      icao24: state[0] || null,\n      callsign: (state[1] || '').trim() || null,\n      origin_country: state[2] || null,\n      time_position: state[3] || null,\n      last_contact: state[4] || null,\n      longitude: state[5] || null,\n      latitude: state[6] || null,\n      baro_altitude: state[7] || null,\n      on_ground: state[8] || false,\n      velocity: state[9] || null,\n      true_track: state[10] || null,\n      vertical_rate: state[11] || null,\n      geo_altitude: state[13] || null,\n      squawk: state[14] || null,\n      spi: state[15] || false,\n      position_source: state[16] || 0,\n      // Add computed fields\n      fetch_timestamp: timestamp,\n      region: 'region1'\n    };\n    \n    // Only include flights with valid position data\n    if (flight.latitude !== null && flight.longitude !== null) {\n      flights.push(flight);\n    }\n  }\n  \n  // Create snapshot object\n  const snapshot = {\n    timestamp: timestamp,\n    datetime: new Date(timestamp * 1000).toISOString(),\n    region: 'region1',\n    region_name: 'Central Europe',\n    bounding_box: {\n      lamin: 45.0,\n      lomin: 5.0,\n      lamax: 55.0,\n      lomax: 15.0\n    },\n    flight_count: flights.length,\n    flights: flights,\n    metadata: {\n      api_status: 'success',\n      fetch_method: 'n8n_workflow',\n      workflow_execution: $execution.id\n    }\n  };\n  \n  outputItems.push({\n    json: snapshot\n  });\n  \n  console.log(`Processed ${flights.length} flights for region1`);\n}\n\nreturn outputItems;"
+      },
+      "id": "transform-data-node",
+      "name": "Transform Flight Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Load previous snapshot and detect anomalies\nconst fs = require('fs');\nconst path = require('path');\n\nconst items = $input.all();\nconst outputItems = [];\n\nfor (const item of items) {\n  const currentSnapshot = item.json;\n  let previousSnapshot = null;\n  \n  // Try to load previous snapshot\n  const snapshotPath = '/data/flight_snapshots/region1_latest.json';\n  try {\n    if (fs.existsSync(snapshotPath)) {\n      const previousData = fs.readFileSync(snapshotPath, 'utf8');\n      previousSnapshot = JSON.parse(previousData);\n    }\n  } catch (error) {\n    console.log('Could not load previous snapshot:', error.message);\n  }\n  \n  // Detect anomalies by comparing current and previous snapshots\n  const anomalies = [];\n  \n  if (previousSnapshot && previousSnapshot.flights) {\n    const prevFlightMap = {};\n    previousSnapshot.flights.forEach(f => {\n      if (f.icao24) prevFlightMap[f.icao24] = f;\n    });\n    \n    currentSnapshot.flights.forEach(currentFlight => {\n      const prevFlight = prevFlightMap[currentFlight.icao24];\n      \n      if (prevFlight) {\n        // Check for altitude change\n        if (currentFlight.baro_altitude && prevFlight.baro_altitude) {\n          const altChange = Math.abs(currentFlight.baro_altitude - prevFlight.baro_altitude);\n          if (altChange > 500) {\n            anomalies.push({\n              type: 'rapid_altitude_change',\n              icao24: currentFlight.icao24,\n              callsign: currentFlight.callsign,\n              severity: 'high',\n              details: `Altitude changed by ${altChange.toFixed(0)}m`,\n              current_altitude: currentFlight.baro_altitude,\n              previous_altitude: prevFlight.baro_altitude\n            });\n          }\n        }\n      }\n      \n      // Check for low speed at high altitude\n      if (currentFlight.velocity !== null && currentFlight.baro_altitude !== null) {\n        if (currentFlight.velocity < 50 && currentFlight.baro_altitude > 8000) {\n          anomalies.push({\n            type: 'low_speed_at_altitude',\n            icao24: currentFlight.icao24,\n            callsign: currentFlight.callsign,\n            severity: 'high',\n            details: `Speed ${currentFlight.velocity.toFixed(1)} m/s at ${currentFlight.baro_altitude.toFixed(0)}m altitude`,\n            velocity: currentFlight.velocity,\n            altitude: currentFlight.baro_altitude\n          });\n        }\n      }\n      \n      // Check for rapid descent\n      if (currentFlight.vertical_rate !== null && currentFlight.vertical_rate < -15) {\n        if (currentFlight.baro_altitude && currentFlight.baro_altitude > 1000) {\n          anomalies.push({\n            type: 'rapid_descent',\n            icao24: currentFlight.icao24,\n            callsign: currentFlight.callsign,\n            severity: 'critical',\n            details: `Descending at ${currentFlight.vertical_rate.toFixed(1)} m/s`,\n            vertical_rate: currentFlight.vertical_rate,\n            altitude: currentFlight.baro_altitude\n          });\n        }\n      }\n      \n      // Check for stationary aircraft (very low speed)\n      if (currentFlight.velocity !== null && currentFlight.velocity < 10 && !currentFlight.on_ground) {\n        anomalies.push({\n          type: 'stationary_aircraft',\n          icao24: currentFlight.icao24,\n          callsign: currentFlight.callsign,\n          severity: 'medium',\n          details: `Nearly stationary at ${currentFlight.velocity.toFixed(1)} m/s (not on ground)`,\n          velocity: currentFlight.velocity,\n          on_ground: currentFlight.on_ground\n        });\n      }\n    });\n  }\n  \n  // Add anomalies to snapshot\n  currentSnapshot.anomalies = anomalies;\n  currentSnapshot.anomaly_count = anomalies.length;\n  \n  outputItems.push({\n    json: currentSnapshot\n  });\n  \n  console.log(`Detected ${anomalies.length} anomalies in region1`);\n}\n\nreturn outputItems;"
+      },
+      "id": "detect-anomalies-node",
+      "name": "Detect Anomalies",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/data/flight_snapshots/region1_latest.json",
+        "options": {
+          "encoding": "utf8"
+        }
+      },
+      "id": "write-snapshot-file",
+      "name": "Write Snapshot to File",
+      "type": "n8n-nodes-base.writeFile",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json.anomaly_count}}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "check-has-anomalies",
+      "name": "Has Anomalies?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Save anomalies to alerts file\nconst fs = require('fs');\nconst items = $input.all();\n\nfor (const item of items) {\n  const snapshot = item.json;\n  \n  if (snapshot.anomalies && snapshot.anomalies.length > 0) {\n    const alertsPath = '/data/alerts/active_alerts.json';\n    let allAlerts = [];\n    \n    // Load existing alerts\n    try {\n      if (fs.existsSync(alertsPath)) {\n        const existingData = fs.readFileSync(alertsPath, 'utf8');\n        allAlerts = JSON.parse(existingData);\n      }\n    } catch (error) {\n      console.log('Could not load existing alerts:', error.message);\n    }\n    \n    // Add new anomalies with timestamps\n    const newAlerts = snapshot.anomalies.map(anomaly => ({\n      ...anomaly,\n      timestamp: snapshot.timestamp,\n      datetime: snapshot.datetime,\n      region: snapshot.region,\n      alert_id: `${anomaly.icao24}_${anomaly.type}_${snapshot.timestamp}`\n    }));\n    \n    // Combine with existing alerts (keep last 100)\n    allAlerts = [...newAlerts, ...allAlerts].slice(0, 100);\n    \n    // Write back to file\n    const alertsData = {\n      last_updated: snapshot.datetime,\n      alert_count: allAlerts.length,\n      alerts: allAlerts\n    };\n    \n    fs.writeFileSync(alertsPath, JSON.stringify(alertsData, null, 2), 'utf8');\n    console.log(`Saved ${newAlerts.length} new alerts to ${alertsPath}`);\n  }\n}\n\nreturn items;"
+      },
+      "id": "save-alerts-node",
+      "name": "Save Alerts to File",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle API failure - load cached snapshot\nconst fs = require('fs');\nconst snapshotPath = '/data/flight_snapshots/region1_latest.json';\n\nlet cachedSnapshot = null;\n\ntry {\n  if (fs.existsSync(snapshotPath)) {\n    const cachedData = fs.readFileSync(snapshotPath, 'utf8');\n    cachedSnapshot = JSON.parse(cachedData);\n    \n    // Update metadata to indicate cache use\n    if (cachedSnapshot.metadata) {\n      cachedSnapshot.metadata.api_status = 'cached';\n      cachedSnapshot.metadata.cache_reason = 'API request failed or rate limited';\n      cachedSnapshot.metadata.cached_at = new Date().toISOString();\n    }\n    \n    console.log('API failed - using cached snapshot from', cachedSnapshot.datetime);\n    \n    return [{ json: cachedSnapshot }];\n  }\n} catch (error) {\n  console.log('Could not load cached snapshot:', error.message);\n}\n\n// If no cache available, return empty structure\nreturn [{\n  json: {\n    timestamp: Math.floor(Date.now() / 1000),\n    datetime: new Date().toISOString(),\n    region: 'region1',\n    region_name: 'Central Europe',\n    flight_count: 0,\n    flights: [],\n    anomalies: [],\n    anomaly_count: 0,\n    metadata: {\n      api_status: 'failed',\n      cache_status: 'unavailable',\n      error: 'No cached data available'\n    }\n  }\n}];"
+      },
+      "id": "handle-api-failure",
+      "name": "Load Cached Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/data/logs/fetch_history.log",
+        "options": {
+          "encoding": "utf8",
+          "append": true
+        }
+      },
+      "id": "log-execution",
+      "name": "Log Execution",
+      "type": "n8n-nodes-base.writeFile",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Create log entry\nconst items = $input.all();\nconst logEntries = [];\n\nfor (const item of items) {\n  const snapshot = item.json;\n  \n  const logEntry = {\n    timestamp: snapshot.datetime,\n    region: snapshot.region,\n    flight_count: snapshot.flight_count,\n    anomaly_count: snapshot.anomaly_count || 0,\n    api_status: snapshot.metadata?.api_status || 'unknown',\n    workflow_id: $execution.id\n  };\n  \n  const logLine = JSON.stringify(logEntry) + '\\n';\n  logEntries.push({ json: { data: logLine } });\n}\n\nreturn logEntries;"
+      },
+      "id": "format-log-entry",
+      "name": "Format Log Entry",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Every 15 Seconds": {
+      "main": [
+        [
+          {
+            "node": "Fetch OpenSky Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch OpenSky Data": {
+      "main": [
+        [
+          {
+            "node": "Check API Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check API Success": {
+      "main": [
+        [
+          {
+            "node": "Transform Flight Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Load Cached Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform Flight Data": {
+      "main": [
+        [
+          {
+            "node": "Detect Anomalies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect Anomalies": {
+      "main": [
+        [
+          {
+            "node": "Write Snapshot to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Snapshot to File": {
+      "main": [
+        [
+          {
+            "node": "Has Anomalies?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Format Log Entry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Anomalies?": {
+      "main": [
+        [
+          {
+            "node": "Save Alerts to File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Load Cached Data": {
+      "main": [
+        [
+          {
+            "node": "Format Log Entry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Log Entry": {
+      "main": [
+        [
+          {
+            "node": "Log Execution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2025-01-25T00:00:00.000Z",
+  "versionId": "1"
+}

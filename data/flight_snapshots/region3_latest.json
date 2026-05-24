@@ -1,0 +1,14 @@
+{
+  "timestamp": 0,
+  "datetime": "1970-01-01T00:00:00.000Z",
+  "region": "region3",
+  "region_name": "Middle East Hub",
+  "flight_count": 0,
+  "flights": [],
+  "anomalies": [],
+  "anomaly_count": 0,
+  "metadata": {
+    "api_status": "initial",
+    "note": "This is the initial placeholder file"
+  }
+}

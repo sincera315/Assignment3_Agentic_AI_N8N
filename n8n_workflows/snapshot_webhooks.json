@@ -1,0 +1,437 @@
+{
+  "name": "Snapshot Webhook Endpoints",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "latest-region1",
+        "responseMode": "responseNode",
+        "options": {
+          "noResponseBody": false
+        }
+      },
+      "id": "webhook-region1",
+      "name": "Webhook: Region 1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "region1-snapshot"
+    },
+    {
+      "parameters": {
+        "filePath": "/data/flight_snapshots/region1_latest.json",
+        "options": {}
+      },
+      "id": "read-region1-snapshot",
+      "name": "Read Region 1 Snapshot",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse JSON and return as response\nconst items = $input.all();\n\nif (items.length === 0) {\n  return [{\n    json: {\n      error: 'No snapshot data available',\n      region: 'region1',\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\nfor (const item of items) {\n  try {\n    // Get the binary data\n    const binaryData = item.binary.data;\n    const jsonString = Buffer.from(binaryData, 'base64').toString('utf8');\n    const snapshotData = JSON.parse(jsonString);\n    \n    return [{\n      json: snapshotData\n    }];\n  } catch (error) {\n    return [{\n      json: {\n        error: 'Failed to parse snapshot data',\n        details: error.message,\n        region: 'region1',\n        timestamp: new Date().toISOString()\n      }\n    }];\n  }\n}\n\nreturn items;"
+      },
+      "id": "parse-json-region1",
+      "name": "Parse JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-region1",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "latest-region2",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-region2",
+      "name": "Webhook: Region 2",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        520
+      ],
+      "webhookId": "region2-snapshot"
+    },
+    {
+      "parameters": {
+        "filePath": "/data/flight_snapshots/region2_latest.json",
+        "options": {}
+      },
+      "id": "read-region2-snapshot",
+      "name": "Read Region 2 Snapshot",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        460,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse JSON and return as response\nconst items = $input.all();\n\nif (items.length === 0) {\n  return [{\n    json: {\n      error: 'No snapshot data available',\n      region: 'region2',\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\nfor (const item of items) {\n  try {\n    const binaryData = item.binary.data;\n    const jsonString = Buffer.from(binaryData, 'base64').toString('utf8');\n    const snapshotData = JSON.parse(jsonString);\n    \n    return [{\n      json: snapshotData\n    }];\n  } catch (error) {\n    return [{\n      json: {\n        error: 'Failed to parse snapshot data',\n        details: error.message,\n        region: 'region2',\n        timestamp: new Date().toISOString()\n      }\n    }];\n  }\n}\n\nreturn items;"
+      },
+      "id": "parse-json-region2",
+      "name": "Parse JSON Region 2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-region2",
+      "name": "Respond Region 2",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        900,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "latest-region3",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-region3",
+      "name": "Webhook: Region 3",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        740
+      ],
+      "webhookId": "region3-snapshot"
+    },
+    {
+      "parameters": {
+        "filePath": "/data/flight_snapshots/region3_latest.json",
+        "options": {}
+      },
+      "id": "read-region3-snapshot",
+      "name": "Read Region 3 Snapshot",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        460,
+        740
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse JSON and return as response\nconst items = $input.all();\n\nif (items.length === 0) {\n  return [{\n    json: {\n      error: 'No snapshot data available',\n      region: 'region3',\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\nfor (const item of items) {\n  try {\n    const binaryData = item.binary.data;\n    const jsonString = Buffer.from(binaryData, 'base64').toString('utf8');\n    const snapshotData = JSON.parse(jsonString);\n    \n    return [{\n      json: snapshotData\n    }];\n  } catch (error) {\n    return [{\n      json: {\n        error: 'Failed to parse snapshot data',\n        details: error.message,\n        region: 'region3',\n        timestamp: new Date().toISOString()\n      }\n    }];\n  }\n}\n\nreturn items;"
+      },
+      "id": "parse-json-region3",
+      "name": "Parse JSON Region 3",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        740
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-region3",
+      "name": "Respond Region 3",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        900,
+        740
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "active-alerts",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-alerts",
+      "name": "Webhook: Active Alerts",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        960
+      ],
+      "webhookId": "active-alerts"
+    },
+    {
+      "parameters": {
+        "filePath": "/data/alerts/active_alerts.json",
+        "options": {}
+      },
+      "id": "read-alerts",
+      "name": "Read Active Alerts",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        460,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse JSON and return alerts\nconst items = $input.all();\n\nif (items.length === 0) {\n  return [{\n    json: {\n      alert_count: 0,\n      alerts: [],\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\nfor (const item of items) {\n  try {\n    const binaryData = item.binary.data;\n    const jsonString = Buffer.from(binaryData, 'base64').toString('utf8');\n    const alertsData = JSON.parse(jsonString);\n    \n    return [{\n      json: alertsData\n    }];\n  } catch (error) {\n    return [{\n      json: {\n        error: 'Failed to parse alerts data',\n        details: error.message,\n        alert_count: 0,\n        alerts: [],\n        timestamp: new Date().toISOString()\n      }\n    }];\n  }\n}\n\nreturn items;"
+      },
+      "id": "parse-alerts-json",
+      "name": "Parse Alerts JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-alerts",
+      "name": "Respond Alerts",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        900,
+        960
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook: Region 1": {
+      "main": [
+        [
+          {
+            "node": "Read Region 1 Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Region 1 Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: Region 2": {
+      "main": [
+        [
+          {
+            "node": "Read Region 2 Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Region 2 Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON Region 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON Region 2": {
+      "main": [
+        [
+          {
+            "node": "Respond Region 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: Region 3": {
+      "main": [
+        [
+          {
+            "node": "Read Region 3 Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Region 3 Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON Region 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON Region 3": {
+      "main": [
+        [
+          {
+            "node": "Respond Region 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: Active Alerts": {
+      "main": [
+        [
+          {
+            "node": "Read Active Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Active Alerts": {
+      "main": [
+        [
+          {
+            "node": "Parse Alerts JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Alerts JSON": {
+      "main": [
+        [
+          {
+            "node": "Respond Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 4,
+  "updatedAt": "2025-01-25T00:00:00.000Z",
+  "versionId": "1"
+}

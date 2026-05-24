@@ -1,0 +1,19 @@
+first write 
+just activating it.
+.\venv\Scripts\Activate.ps1
+
+then just go to the docker desktop open it and sideways open cmd as administrator
+then what you need to do is to write this command
+ docker-compose up -d
+ it will create the container that is required then click on it and copy the local host link
+ the link open it on sincere account to see it yourself
+It will send you to the link of n8n local one now create two workflows there
+Work ingestion flow
+Work Explosion flow
+
+a)_my main issue at the moment is path that I did manually right now but i think its not correct do go through it in detail
+b)_my issue here is that the configuration of node which is transform Flight Data the output portion didnt quite get that.
+c)_ the 6 node the write one it is also at error and now I need to work on this but I need to cross check and then work which one of these is to be added here
+d)_ So the answer that gemini gave me was to add the node of write to disk portion 
+and prior to that you have to add a node that can convert the provided data to binary file once thats been done than the write to disk node will take it.
+e)_ You have to go for local host 8000 the curl one command and then check on it. This is where you can check whether the mcp server is working or not.

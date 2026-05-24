@@ -1,0 +1,17 @@
+{
+  "error": "No flight data received",
+  "timestamp": 1764758120,
+  "datetime": "2025-12-03T10:35:20.391Z",
+  "region": "region1",
+  "region_name": "Central Europe (Frankfurt, Munich, Vienna, Zurich)",
+  "flight_count": 0,
+  "flights": [],
+  "anomalies": [],
+  "anomaly_count": 0,
+  "bounding_box": {
+    "lat_min": 45,
+    "lat_max": 55,
+    "lon_min": 5,
+    "lon_max": 15
+  }
+}
